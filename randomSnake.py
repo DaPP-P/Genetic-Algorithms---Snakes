@@ -17,9 +17,6 @@ class RandomSnake:
             window_size - 2 * border_margin
         )
         self.snake = pg.rect.Rect([0, 0, tile_size - 2, tile_size - 2])
-        self.food = self.snake.copy()
-        self.food.center = self.get_random_position_in_playable_area()
-        self.foods = [self.food]
         self.length = 3
         self.direction_map = {
             0: (tile_size, 0),  # Right
@@ -52,16 +49,26 @@ class RandomSnake:
                 return pos
 
     def move(self):
-        # Randomly choose a direction to move
-        self.snake_dir = self.direction_map[randrange(0, 4)]
+        # Randomly choose a direction to move, ensuring it's not the opposite of current direction
+        opposite_direction = (-self.snake_dir[0], -self.snake_dir[1])
+        
+        while True:
+            new_direction = self.direction_map[randrange(0, 4)]
+            if new_direction != opposite_direction:
+                self.snake_dir = new_direction
+                break
+        
         self.snake.move_ip(self.snake_dir)
         self.segments.append(self.snake.copy())
         self.segments = self.segments[-self.length:]
 
-    def check_collision(self):
+    def check_collision(self, other_snake_segments):
         self_eating = pg.Rect.collidelist(self.snake, self.segments[:-1]) != -1
         snake_outside = not self.playable_area.contains(self.snake)
-        if snake_outside or self_eating:
+        collision_with_other_snake = pg.Rect.collidelist(self.snake, other_snake_segments) != -1
+
+        
+        if snake_outside or self_eating or collision_with_other_snake:
             self.snake.center = self.get_random_position_in_playable_area()
             self.length = 3
             self.starterDir = randrange(0, 4)  # Randomize direction again on reset
@@ -78,30 +85,19 @@ class RandomSnake:
                 elif self.starterDir == 3:  # Down
                     new_segment.y -= self.TILE_SIZE * _
                 self.segments.insert(0, new_segment)
-            self.food.center = self.get_random_position_in_playable_area()
-            self.foods = [self.food]
 
-    def check_food_collision(self):
-        for f in self.foods[:]:
-            if self.snake.colliderect(f):
-                self.foods.remove(f)
+
+    def check_food_collision(self, food_items):
+        for food in food_items[:]:
+            if self.snake.colliderect(food):
+                food_items.remove(food)
                 self.length += 1
 
     def draw(self, screen):
         pg.draw.rect(screen, 'red', self.segments[-1])  # Draw the head in red
         for segment in self.segments[:-1]:  # Draw the body segments in a lighter color
             pg.draw.rect(screen, (255, 102, 102), segment)  # Using a light red for the body
-        for f in self.foods:
-            pg.draw.rect(screen, 'white', f)
+
 
     def handle_event(self, event):
         """Handle key events to change the snake's direction."""
-        if event.type == pg.KEYDOWN:
-            if event.key == pg.K_w and self.snake_dir != (0, self.TILE_SIZE):
-                self.snake_dir = (0, -self.TILE_SIZE)
-            elif event.key == pg.K_s and self.snake_dir != (0, -self.TILE_SIZE):
-                self.snake_dir = (0, self.TILE_SIZE)
-            elif event.key == pg.K_a and self.snake_dir != (self.TILE_SIZE, 0):
-                self.snake_dir = (-self.TILE_SIZE, 0)
-            elif event.key == pg.K_d and self.snake_dir != (-self.TILE_SIZE, 0):
-                self.snake_dir = (self.TILE_SIZE, 0)
