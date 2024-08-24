@@ -31,7 +31,7 @@ for _ in range(no_of_random_snakes):
 
 # Timer Setup
 SPAWN_FOOD_EVENT = pg.USEREVENT + 1
-pg.time.set_timer(SPAWN_FOOD_EVENT, 250)  # Set timer for every 1 second
+pg.time.set_timer(SPAWN_FOOD_EVENT, 350)  # Set timer for every 1 second
 time, time_step = 0, 150
 
 # Game loop
@@ -70,11 +70,12 @@ while True:
 
         # Check collisions for the controllable snake with all random snakes
         for random_snake in random_snakes:
-            controllable_snake.check_collision(random_snake.segments)
-            random_snake.check_collision(controllable_snake.segments)
-            for other_snake in random_snakes:
-                if other_snake != random_snake:
-                    random_snake.check_collision(other_snake.segments)
+            if not random_snake.is_dead:
+                controllable_snake.check_collision(random_snake.segments)
+                random_snake.check_collision(controllable_snake.segments)
+                for other_snake in random_snakes:
+                    if other_snake != random_snake:
+                        random_snake.check_collision(other_snake.segments)
 
 
         # Check food collisions
